@@ -157,12 +157,11 @@ const AdminPortal = ({ onBack }: AdminPortalProps) => {
       const mappedStatus = statusMap[newStatus] || newStatus
       console.log('Mapped status:', mappedStatus)
       
-      // Update complaint with new status and department
+      // Update complaint status only (avoid writing department into a UUID column)
       const { error: updateError } = await supabase
         .from('complaints')
         .update({ 
-          status: mappedStatus,
-          assigned_to: departmentName || selectedComplaint.assigned_to
+          status: mappedStatus
         })
         .eq('id', selectedComplaint.id)
 
@@ -173,14 +172,14 @@ const AdminPortal = ({ onBack }: AdminPortalProps) => {
 
       console.log('Complaint updated successfully')
 
-      // Insert status update record
+      // Insert status update record (stores human-readable assigned_to/contact here)
       const { error: statusError } = await supabase
         .from('complaint_status_updates')
         .insert({
           complaint_id: selectedComplaint.id,
           status: mappedStatus,
-          assigned_to: workerName,
-          assigned_contact: workerContact,
+          assigned_to: workerName || departmentName || null,
+          assigned_contact: workerContact || null,
           note: statusNote || `Status updated to ${newStatus}`
         })
 
@@ -224,7 +223,9 @@ const AdminPortal = ({ onBack }: AdminPortalProps) => {
       console.error('Error assigning worker:', error)
       toast({ 
         title: "Error assigning worker", 
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description: error && typeof error === 'object' && 'message' in (error as any)
+          ? String((error as any).message)
+          : JSON.stringify(error),
         variant: "destructive" 
       })
     }

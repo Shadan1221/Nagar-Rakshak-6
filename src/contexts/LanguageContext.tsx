@@ -44,7 +44,7 @@ const translations: Record<Language, Record<string, string>> = {
     'dashboard.emergencyHelplines': 'Emergency Helplines',
     'dashboard.helplineDesc': 'Important contact numbers',
     'dashboard.available247': '24/7 Available',
-    'dashboard.recentActivity': 'Recent Activity',
+    'dashboard.recentActivity': 'Recent Activity Near Me',
     'dashboard.communityImpact': 'Community Impact',
     'dashboard.impactDesc': 'Your reports have helped improve 5 civic issues this month!',
     'dashboard.activeCitizenBadge': 'Active Citizen Badge',

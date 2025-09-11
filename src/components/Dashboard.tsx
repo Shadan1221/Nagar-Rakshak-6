@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Plus, Search, Phone, BarChart3, Clock, CheckCircle, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Plus, Search, Phone, BarChart3, Clock, CheckCircle, AlertTriangle, ThumbsUp } from "lucide-react"
 import { useState, useEffect } from "react"
 import { supabase } from "../integrations/supabase/client"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -18,6 +18,8 @@ const Dashboard = ({ onBack, onNavigate }: DashboardProps) => {
   const [stats, setStats] = useState({ resolved: 0, inProgress: 0, total: 0 })
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [upvotes, setUpvotes] = useState<Record<string, number>>({})
+  const [upvoted, setUpvoted] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchDashboardData()
@@ -89,6 +91,21 @@ const Dashboard = ({ onBack, onNavigate }: DashboardProps) => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleUpvote = (activityId: string) => {
+    setUpvotes(prev => {
+      const current = prev[activityId] || 0
+      const isUpvoted = upvoted.has(activityId)
+      const nextCount = isUpvoted ? Math.max(current - 1, 0) : current + 1
+      return { ...prev, [activityId]: nextCount }
+    })
+    setUpvoted(prev => {
+      const next = new Set(prev)
+      if (next.has(activityId)) next.delete(activityId)
+      else next.add(activityId)
+      return next
+    })
   }
 
   const getStatusColor = (status: string) => {
@@ -223,16 +240,30 @@ const Dashboard = ({ onBack, onNavigate }: DashboardProps) => {
               <div className="text-center py-4 text-muted-foreground">No recent activity</div>
             ) : (
               recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/5 rounded-lg">
-                  <div>
-                    <p className="font-medium">{activity.type || 'General Issue'}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.id} • {new Date(activity.date).toLocaleDateString()}
-                    </p>
+                <div key={index} className="p-3 bg-muted/5 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{activity.type || 'General Issue'}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {activity.id} • {new Date(activity.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className={getStatusColor(activity.status)}>
+                      {activity.status || 'Unknown'}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className={getStatusColor(activity.status)}>
-                    {activity.status || 'Unknown'}
-                  </Badge>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Button
+                      variant={upvoted.has(activity.id) ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => handleUpvote(activity.id)}
+                    >
+                      <ThumbsUp className="h-3 w-3 mr-1" />
+                      {upvoted.has(activity.id) ? 'Upvoted' : 'Upvote'}
+                    </Button>
+                    <span className="text-xs text-muted-foreground">{upvotes[activity.id] || 0} upvotes</span>
+                  </div>
                 </div>
               ))
             )}
