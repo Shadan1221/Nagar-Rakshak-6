@@ -204,6 +204,14 @@ const ComplaintRegistration = ({ onBack }: ComplaintRegistrationProps) => {
   }
 
   const handleSubmit = async () => {
+    if (!formData.media) {
+        toast({
+          title: "Upload Media is required",
+          description: "Please add a relevant photo or video.",
+          variant: "destructive"
+        })
+        return
+      }
     if (!formData.state || !formData.city || !formData.issueType || !formData.description) {
         toast({
           title: "Missing Information",
@@ -466,7 +474,7 @@ const ComplaintRegistration = ({ onBack }: ComplaintRegistrationProps) => {
             </div>
 
             <div>
-              <Label>{t('complaint.media')} ({t('action.optional')})</Label>
+              <Label>{t('complaint.media')} *</Label>
               <div className="border-2 border-dashed border-civic-saffron/30 rounded-lg p-4 text-center hover:border-civic-saffron/50 transition-colors">
                 <input
                   type="file"
@@ -522,7 +530,7 @@ const ComplaintRegistration = ({ onBack }: ComplaintRegistrationProps) => {
                     <Camera className="h-5 w-5 text-civic-saffron mx-auto mb-1" />
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {isAnalyzing ? "Analyzing..." : formData.media ? formData.media.name : 'Use Camera or Gallery to add photo'}
+                    {isAnalyzing ? "Analyzing..." : formData.media ? formData.media.name : 'Use Camera or Gallery to upload media'}
                   </p>
                 </div>
               </div>

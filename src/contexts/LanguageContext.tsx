@@ -22,10 +22,10 @@ const translations: Record<Language, Record<string, string>> = {
     'app.madeForIndia': 'Made for Digital India',
     
     // Navigation
-    'nav.login': 'Login with Phone',
-    'nav.loginDesc': 'Quick OTP verification',
+    'nav.login': 'Login',
+    'nav.loginDesc': 'Quick login with credentials',
     'nav.signup': 'New Citizen Signup',
-    'nav.signupDesc': 'Join the movement',
+    'nav.signupDesc': 'Quick OTP account creation',
     'nav.admin': 'Admin Portal',
     'nav.adminDesc': 'Government officials',
     'nav.back': 'Back',
@@ -59,7 +59,7 @@ const translations: Record<Language, Record<string, string>> = {
     'complaint.address2': 'Address Line 2',
     'complaint.issueType': 'Issue Type',
     'complaint.description': 'Description',
-    'complaint.media': 'Add Photo/Video',
+    'complaint.media': 'Upload Media',
     'complaint.audio': 'Voice Note',
     'complaint.gps': 'GPS Location',
     'complaint.submit': 'Submit Complaint',
