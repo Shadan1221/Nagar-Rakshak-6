@@ -1,9 +1,10 @@
+// src/components/AdminLogin.tsx
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Button } from "./ui/button"
-import { Shield, LogIn } from "lucide-react"
+import { Shield, LogIn, Copy } from "lucide-react"
 
 interface AdminLoginProps {
   onBack: () => void
@@ -15,6 +16,7 @@ const AdminLogin = ({ onBack, onSuccess }: AdminLoginProps) => {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showDemo, setShowDemo] = useState(false)
 
   const handleLogin = async () => {
     setError("")
@@ -31,6 +33,11 @@ const AdminLogin = ({ onBack, onSuccess }: AdminLoginProps) => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    // You can add a toast notification here if you have a toast system
   }
 
   return (
@@ -65,6 +72,34 @@ const AdminLogin = ({ onBack, onSuccess }: AdminLoginProps) => {
             <Button className="w-full bg-civic-blue hover:bg-civic-blue/90" onClick={handleLogin} disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
+            <div className="text-center">
+              <Button variant="link" onClick={() => setShowDemo(!showDemo)}>
+                {showDemo ? "Hide" : "Show"} Demo Account
+              </Button>
+            </div>
+            {showDemo && (
+              <div className="absolute top-4 right-4">
+                <Card className="w-64">
+                  <CardHeader>
+                    <CardTitle>Demo Account</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span>Username: AdminCP</span>
+                      <Button variant="ghost" size="icon" onClick={() => copyToClipboard("AdminCP")}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Password: password123</span>
+                      <Button variant="ghost" size="icon" onClick={() => copyToClipboard("password123")}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -73,5 +108,3 @@ const AdminLogin = ({ onBack, onSuccess }: AdminLoginProps) => {
 }
 
 export default AdminLogin
-
-

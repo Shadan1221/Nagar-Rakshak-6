@@ -1,10 +1,11 @@
+// src/components/AuthLogin.tsx
 import { useState } from "react"
 import { Button } from "./ui/button.tsx"
 import { Input } from "./ui/input.tsx"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card.tsx"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "./ui/card.tsx"
 import { Label } from "./ui/label.tsx"
 import { supabase } from "../integrations/supabase/client.ts"
-import { ArrowLeft, Eye, EyeOff, User, Lock } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, User, Lock, Copy } from "lucide-react"
 import { useToast } from "../hooks/use-toast.ts"
 
 interface AuthLoginProps {
@@ -18,6 +19,7 @@ const AuthLogin = ({ onBack, onSuccess, onNavigateToSignup }: AuthLoginProps) =>
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showDemo, setShowDemo] = useState(false)
   const { toast } = useToast()
 
   const handleLogin = async () => {
@@ -71,6 +73,11 @@ const AuthLogin = ({ onBack, onSuccess, onNavigateToSignup }: AuthLoginProps) =>
     }
   }
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast({ title: "Copied to clipboard!" })
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-md mx-auto pt-16">
@@ -78,7 +85,7 @@ const AuthLogin = ({ onBack, onSuccess, onNavigateToSignup }: AuthLoginProps) =>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        
+
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Login to Nagar Rakshak</CardTitle>
@@ -103,7 +110,7 @@ const AuthLogin = ({ onBack, onSuccess, onNavigateToSignup }: AuthLoginProps) =>
                   />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
@@ -135,9 +142,9 @@ const AuthLogin = ({ onBack, onSuccess, onNavigateToSignup }: AuthLoginProps) =>
               </div>
             </div>
 
-            <Button 
-              onClick={handleLogin} 
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700" 
+            <Button
+              onClick={handleLogin}
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700"
               disabled={loading}
             >
               {loading ? "Logging in..." : "Login"}
@@ -151,6 +158,28 @@ const AuthLogin = ({ onBack, onSuccess, onNavigateToSignup }: AuthLoginProps) =>
                 </Button>
               </p>
             </div>
+            <div className="text-center">
+              <Button variant="link" onClick={() => setShowDemo(!showDemo)}>
+                {showDemo ? "Hide" : "Show"} Demo Account
+              </Button>
+            </div>
+            {showDemo && (
+              <CardFooter className="flex flex-col items-start space-y-2">
+                <h3 className="text-lg font-semibold">Demo Account:</h3>
+                <div className="flex items-center justify-between w-full">
+                  <span>Username: citizen70156</span>
+                  <Button variant="ghost" size="icon" onClick={() => copyToClipboard("citizen70156")}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between w-full">
+                  <span>Password: lucknow123@L</span>
+                  <Button variant="ghost" size="icon" onClick={() => copyToClipboard("lucknow123@L")}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardFooter>
+            )}
           </CardContent>
         </Card>
       </div>
