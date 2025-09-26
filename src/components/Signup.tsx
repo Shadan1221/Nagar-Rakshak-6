@@ -1,5 +1,3 @@
-// src/components/Signup.tsx
-
 import { useState } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -69,6 +67,9 @@ const Signup = ({ onBack, onNavigate }: SignupProps) => {
             <CardTitle className="text-center">Welcome to Nagar Rakshak</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="p-3 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg text-left">
+              Nagar Rakshak currently supports only Twilio registered users to register as a Nagar Rakshak via OTP, kindly move to "Login" page to use Nagar Rakshak as a Demo User. Thank you
+            </div>
             {!otpSent ? (
               <div className="space-y-4">
                 <div>
