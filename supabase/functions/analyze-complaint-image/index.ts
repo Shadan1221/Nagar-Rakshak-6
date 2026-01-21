@@ -1,98 +1,182 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import fetch from "node-fetch";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-dotenv.config(); // Load .env file
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: "10mb" })); // Allow large images
+// OpenRouter API KEY from environment
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY is not set in your environment variables.");
-  process.exit(1);
+if (!OPENROUTER_API_KEY) {
+  console.error("OPENROUTER_API_KEY is not set in environment variables.");
 }
 
-app.post("/analyze-image", async (req, res) => {
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
-    const { imageData, issueType } = req.body;
+    const { imageData, issueType } = await req.json();
 
     // Input validation
     if (!imageData || typeof imageData !== "string") {
-      return res.status(400).json({ is_relevant: false, reason: "Image data is missing or invalid." });
+      return new Response(
+        JSON.stringify({
+          is_relevant: false,
+          reason: "Image data is missing or invalid.",
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
+
     if (!issueType || typeof issueType !== "string") {
-      return res.status(400).json({ is_relevant: false, reason: "Issue type is required." });
+      return new Response(
+        JSON.stringify({
+          is_relevant: false,
+          reason: "Issue type is required.",
+        }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
-    const base64ImageData = imageData.replace(/^data:image\/\w+;base64,/, "");
+    // Remove data:image/... prefix if present
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-
+    // Prompt for OpenRouter Qwen
     const prompt = `
 You are an AI assistant for "Nagar Rakshak", a civic issue reporting app.
 Analyze the provided image for a complaint about "${issueType}".
 Determine if the image is genuinely relevant.
 If relevant, provide a concise 2-line description of the problem's severity and genuineness.
+
 Respond ONLY in JSON:
-1. For irrelevant images: {"is_relevant": false, "reason": "Image does not appear to be related."}
-2. For relevant images: {"is_relevant": true, "description": "YOUR_DESCRIPTION_HERE"}
+1. For irrelevant images:
+{"is_relevant": false, "reason": "Image does not appear to be related."}
+
+2. For relevant images:
+{"is_relevant": true, "description": "YOUR_DESCRIPTION_HERE"}
 `;
 
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            { inline_data: { mime_type: "image/jpeg", data: base64ImageData } },
-          ],
-        },
-      ],
-    };
+    // Use OpenRouter API with Qwen vision model
+    const endpoint = "https://openrouter.ai/api/v1/chat/completions";
 
-    const aiResponse = await fetch(apiUrl, {
+    const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENROUTER_API_KEY || ""}`,
+        "HTTP-Referer": "https://nagar-rakshak.app",
+        "X-Title": "Nagar Rakshak",
+      },
+      body: JSON.stringify({
+        model: "qwen/qwen-2.5-vl-7b-instruct:free",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: prompt,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${base64Data}`,
+                },
+              },
+            ],
+          },
+        ],
+      }),
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("Google AI API Error:", errorText);
-      throw new Error(`AI API request failed with status: ${aiResponse.status}`);
-    }
-
-    const result = (await aiResponse.json()) as {
-      candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
-      }>;
-    };
-
-    if (!result.candidates || result.candidates.length === 0) {
-      throw new Error("AI response was empty or blocked. Please upload a clear image.");
-    }
-
-    const aiText = result.candidates[0]?.content?.parts?.[0]?.text || "";
-
-    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error(
-        "AI response did not contain a valid JSON object. Make sure the image is clear."
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenRouter API error: ${response.status} ${response.statusText}`, errorText);
+      return new Response(
+        JSON.stringify({
+          is_relevant: false,
+          reason: `API Error: ${response.statusText}. Please try again.`,
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    const parsedResponse = JSON.parse(jsonMatch[0]);
+    const data = await response.json();
+    const aiText = data?.choices?.[0]?.message?.content || "";
 
-    return res.json(parsedResponse);
-  } catch (error: any) {
-    console.error("Error in /analyze-image:", error.message);
-    return res.status(500).json({ is_relevant: false, reason: `An error occurred: ${error.message}` });
+    if (!aiText) {
+      return new Response(
+        JSON.stringify({
+          is_relevant: false,
+          reason: "AI response was empty. Please upload a clear image.",
+        }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Robust JSON extraction
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      // fallback: treat response as relevant description
+      return new Response(
+        JSON.stringify({
+          is_relevant: true,
+          description: aiText.trim(),
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    try {
+      const parsedResponse = JSON.parse(jsonMatch[0]);
+      return new Response(
+        JSON.stringify(parsedResponse),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    } catch {
+      return new Response(
+        JSON.stringify({
+          is_relevant: true,
+          description: aiText.trim(),
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+  } catch (error) {
+    console.error("Error in analyze-complaint-image:", error);
+    return new Response(
+      JSON.stringify({
+        is_relevant: false,
+        reason: "An internal server error occurred.",
+      }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 });
-
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

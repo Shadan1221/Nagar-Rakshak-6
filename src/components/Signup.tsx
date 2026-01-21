@@ -26,7 +26,7 @@ const Signup = ({ onBack, onNavigate }: SignupProps) => {
     }
     setLoading(true)
     const { error } = await supabase.auth.signInWithOtp({
-      phone: `+91${phone}`, // Assuming Indian phone numbers
+      phone: `+91${phone}`, // Indian phone numbers
     })
     if (error) {
       toast({ title: "Error sending OTP", description: error.message, variant: "destructive" })
