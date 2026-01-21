@@ -101,8 +101,9 @@ const ComplaintRegistration = ({ onBack }: ComplaintRegistrationProps) => {
         const base64data = reader.result?.toString().split(',')[1];
 
         try {
-            // Switched to local backend for OpenRouter support
-            const response = await fetch('http://localhost:3000/analyze-image', {
+            // Get backend URL from environment or default to localhost
+            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+            const response = await fetch(`${backendUrl}/analyze-image`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
